@@ -28,6 +28,7 @@ mat_kba = ref.mat_kba[mesh]
 
 index_iz = [2, 5]
 index_iz_a = [2]
+index_iz_b = [5]
 
 
 def compute_liouvillian(

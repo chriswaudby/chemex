@@ -37,6 +37,7 @@ mat_kca = ref.mat_kca[mesh]
 
 index_iz = [2, 5, 8]
 index_iz_a = [2]
+index_iz_b = [5]
 
 
 def compute_liouvillian(
