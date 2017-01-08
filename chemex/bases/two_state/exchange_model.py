@@ -23,10 +23,10 @@ def update_params(params=None,
     :return:
 
     """
-    if model not in {'2st.pb_kex', '2st.eyring', '2st.kab_kd', '2st.kon_koff'}:
-        print("Warning: The \'model\' option should be either \'2st.pb_kex\'")
-        print(", \'2st.eyring\', \'2st.kab_kd\', or \'2st.kon_koff\'.")
-        print("\nSet it to the default model: \'2st.pb_kex\'.")
+    if model not in {'2st.pb_kex', '2st.eyring', '2st.temperature', '2st.kab_kd', '2st.kon_koff'}:
+        print("Warning: The 'model' option should be either '2st.pb_kex'")
+        print(", '2st.eyring', '2st.temperature', '2st.kab_kd', or '2st.kon_koff'.")
+        print("\nSet it to the default model: '2st.pb_kex'.")
         model = '2st.pb_kex'
 
     if model == '2st.pb_kex':
@@ -56,6 +56,64 @@ def update_params(params=None,
             (map_names['ds_b'], 0.0, False, None, None, None),
             (map_names['dh_ab'], 6.5e+04, True, None, None, None),
             (map_names['ds_ab'], 0.0, False, None, None, None),
+            (map_names['pb'], 0.0, None, 0.0, 1.0, pb),
+            (map_names['kex_ab'], 0.0, None, 0.0, None, kex_ab), )
+
+    elif model == '2st.temperature':
+        # temperature-dependent population and kinetics:
+        #
+        # G ^
+        #   |         --TS--
+        #   |        /      \
+        #   |        |      |
+        #   |        |      \
+        #   |       /        --B--
+        #   |  --A--
+        #   |
+        #
+        # The exchange rate is calculated relative to that at a reference temperature, T0,
+        # using transition state theory, assuming (a) no temperature dependence of the
+        # pre-exponential factor, and (b) no significant effect of changes in heat capacity over
+        # the observed temperature range.
+        #
+        # pB(T1) = KAB(T1) / (1 + KAB(T1))
+        #     where KAB(T1) = ((pB(T0) / (1+pB(T0))) * exp(-dH_AB/R * (1/T1 - 1/T0)))
+        #
+        # kex(T1) = kab(T1) + kba(T1)
+        #         = kex(T0) * exp(-dH_ATS/R * (1/T1 - 1/T0)) *
+        #               (pB(T0) + (1-pB(T0))*exp(dH_AB/R * (1/T1 - 1/T0)))
+        #
+        # Parameters:
+        #     T0: reference temperature (in degrees C)
+        #     pb0: population B at reference temperature
+        #     kex0: exchange rate at reference temperature (in s-1)
+        #     dH_AB: enthalpy of reaction, deltaH_(A-B) = H_B - H_A (in kJ mol-1)
+        #     dH_ATS: enthalpy of activation, deltaH_(A-TS) = H_TS - H_A (in kJ mol-1)
+
+        map_names.update({
+            'T0': parameters.ParameterName('T0').to_full_name(),
+            'pb0': parameters.ParameterName('pb0').to_full_name(),
+            'kex0': parameters.ParameterName('kex0').to_full_name(),
+            'dH_AB': parameters.ParameterName('dH_AB').to_full_name(),
+            'dH_ATS': parameters.ParameterName('dH_ATS').to_full_name(),
+        })
+
+        R = cnt.R * 0.001 # convert to kJ mol-1 K-1
+
+        pb = ('(({pB0} / (1+{pB0})) * exp(-{dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15)))) / '
+            '(1 + (({pB0} / (1+{pB0})) * exp(-{dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15)))))'.format(
+            R=R, T0=T0, T=temperature, pB0=pB0, dH_AB=dH_AB, **map_names))
+
+        kex_ab = ('{kex0} * exp(-{dH_ATS}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))) * '
+            '({pB0} + (1-{pB0})*exp({dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))))'.format(
+            R=R, T0=T0, T=temperature, pB0=pB0, kex0=kex0, dH_AB=dH_AB, dH_ATS=dH_ATS, **map_names))
+
+        params.add_many(  # Name, Value, Vary, Min, Max, Expr
+            (map_names['T0'], 25, False, None, None, None),
+            (map_names['pb0'], 0.05, True, 0.0, 1.0, None),
+            (map_names['kex0'], 100.0, True, 0.0, None, None),
+            (map_names['dH_AB'], 0.0, True, None, None, None),
+            (map_names['dH_ATS'], 10.0, True, 0.0, None, None),
             (map_names['pb'], 0.0, None, 0.0, 1.0, pb),
             (map_names['kex_ab'], 0.0, None, 0.0, None, kex_ab), )
 
