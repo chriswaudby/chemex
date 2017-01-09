@@ -98,15 +98,15 @@ def update_params(params=None,
             'dH_ATS': parameters.ParameterName('dH_ATS').to_full_name(),
         })
 
-        R = cnt.R * 0.001 # convert to kJ mol-1 K-1
+        R = cst.R * 0.001 # convert to kJ mol-1 K-1
 
         pb = ('(({pB0} / (1+{pB0})) * exp(-{dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15)))) / '
             '(1 + (({pB0} / (1+{pB0})) * exp(-{dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15)))))'.format(
-            R=R, T0=T0, T=temperature, pB0=pB0, dH_AB=dH_AB, **map_names))
+            .format(R=R, T=temperature, **map_names))
 
         kex_ab = ('{kex0} * exp(-{dH_ATS}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))) * '
             '({pB0} + (1-{pB0})*exp({dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))))'.format(
-            R=R, T0=T0, T=temperature, pB0=pB0, kex0=kex0, dH_AB=dH_AB, dH_ATS=dH_ATS, **map_names))
+            .format(R=R, T=temperature, **map_names))
 
         params.add_many(  # Name, Value, Vary, Min, Max, Expr
             (map_names['T0'], 25, False, None, None, None),

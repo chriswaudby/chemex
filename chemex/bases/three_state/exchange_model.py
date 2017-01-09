@@ -1,6 +1,10 @@
 """Module exchange_model contains code for setting up different three-site
 exchange models."""
 
+from scipy import constants as cst
+
+from chemex import parameters
+
 
 def update_params(params=None,
                   map_names=None,
@@ -84,38 +88,36 @@ def update_params(params=None,
             'dH_TSAC': parameters.ParameterName('dH_TSAC').to_full_name(),
         })
 
-        R = cnt.R * 0.001 # convert to kJ mol-1 K-1
+        R = cst.R * 0.001 # convert to kJ mol-1 K-1
 
-        # KAB= (({pB0} / (1-{pB0}-{pC0})) * exp(-{dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))))
-        # KAC= (({pC0} / (1-{pB0}-{pC0})) * exp(-{dH_AC}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))))
-        pb = ('(({pB0} / (1.0-{pB0}-{pC0})) * exp(-{dH_AB}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15))))'
+        # KAB= (({pb0} / (1-{pb0}-{pc0})) * exp(-{dH_AB}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))))
+        # KAC= (({pc0} / (1-{pb0}-{pc0})) * exp(-{dH_AC}/{R} * (1/({T}+273.15) - 1/({T0}+273.15))))
+        pb = ('(({pb0} / (1.0-{pb0}-{pc0})) * exp(-{dH_AB}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15))))'
             ' / (1.0 + '
-            '(({pB0} / (1.0-{pB0}-{pC0})) * exp(-{dH_AB}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) +'
-            '(({pC0} / (1.0-{pB0}-{pC0})) * exp(-{dH_AC}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) )'
-            .format(R=R, T0=T0, T=temperature, pB0=pB0, pC0=pC0, dH_AB=dH_AB, dH_AC=dH_AC, **map_names))
-        pc = ('(({pC0} / (1.0-{pB0}-{pC0})) * exp(-{dH_AC}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15))))'
+            '(({pb0} / (1.0-{pb0}-{pc0})) * exp(-{dH_AB}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) +'
+            '(({pc0} / (1.0-{pb0}-{pc0})) * exp(-{dH_AC}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) )'
+            .format(R=R, T=temperature, **map_names))
+
+        pc = ('(({pc0} / (1.0-{pb0}-{pc0})) * exp(-{dH_AC}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15))))'
             ' / (1.0 + '
-            '(({pB0} / (1.0-{pB0}-{pC0})) * exp(-{dH_AB}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) +'
-            '(({pC0} / (1.0-{pB0}-{pC0})) * exp(-{dH_AC}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) )'
-            .format(R=R, T0=T0, T=temperature, pB0=pB0, pC0=pC0, dH_AB=dH_AB, dH_AC=dH_AC, **map_names))
+            '(({pb0} / (1.0-{pb0}-{pc0})) * exp(-{dH_AB}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) +'
+            '(({pc0} / (1.0-{pb0}-{pc0})) * exp(-{dH_AC}/{R} * (1.0/({T}+273.15) - 1.0/({T0}+273.15)))) )'
+            .format(R=R, T=temperature, **map_names))
 
         kex_ab = ('{kexAB0} * exp(-{dH_TSAB}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) * '
-            '( ({pB0}) / (1.0-{pC0}) +'
-            '(1.0-{pB0}-{pC0}) / (1.0-{pC0}) * exp({dH_AB}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) )'
-            .format(R=R, T0=T0, T=temperature, pB0=pB0, kex0=kex0, dH_AB=dH_AB, dH_AC=dH_AC,
-                dH_TSAB=dH_TSAB, dH_TSBC=dH_TSBC, dH_TSAC=dH_TSAC, **map_names))
+            '( ({pb0}) / (1.0-{pc0}) +'
+            '(1.0-{pb0}-{pc0}) / (1.0-{pc0}) * exp({dH_AB}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) )'
+            .format(R=R, T=temperature, **map_names))
 
         kex_bc = ('{kexBC0} * exp(-{dH_TSBC}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) * '
-            '( ({pC0}) / ({pB0}+{pC0}) * exp({dH_AB}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) + '
-            '({pB0}) / ({pB0}+{pC0}) * exp({dH_AC}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) )'
-            .format(R=R, T0=T0, T=temperature, pB0=pB0, kex0=kex0, dH_AB=dH_AB, dH_AC=dH_AC,
-                dH_TSAB=dH_TSAB, dH_TSBC=dH_TSBC, dH_TSAC=dH_TSAC, **map_names))
+            '( ({pc0}) / ({pb0}+{pc0}) * exp({dH_AB}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) + '
+            '({pb0}) / ({pb0}+{pc0}) * exp({dH_AC}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) )'
+            .format(R=R, T=temperature, **map_names))
 
         kex_ac = ('{kexAC0} * exp(-{dH_TSAC}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) * '
-            '( ({pC0}) / (1.0-{pB0}) +'
-            '(1.0-{pB0}-{pC0}) / (1.0-{pB0}) * exp({dH_AC}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) )'
-            .format(R=R, T0=T0, T=temperature, pB0=pB0, kex0=kex0, dH_AB=dH_AB, dH_AC=dH_AC,
-                dH_TSAB=dH_TSAB, dH_TSBC=dH_TSBC, dH_TSAC=dH_TSAC, **map_names))
+            '( ({pc0}) / (1.0-{pb0}) +'
+            '(1.0-{pb0}-{pc0}) / (1.0-{pb0}) * exp({dH_AC}/{R} * (1.0/({T}+273.15) - 1/({T0}+273.15))) )'
+            .format(R=R, T=temperature, **map_names))
 
         params.add_many(  # Name, Value, Vary, Min, Max, Expr
             (map_names['T0'], 25, False, None, None, None),
@@ -135,3 +137,5 @@ def update_params(params=None,
             (map_names['kex_bc'], 0.0, None, 0.0, None, kex_bc),
             (map_names['kex_ac'], 0.0, None, 0.0, None, kex_ac),
             )
+
+    return map_names, params

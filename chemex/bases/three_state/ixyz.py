@@ -5,6 +5,7 @@ import numpy as np
 
 from chemex import parameters
 from chemex.bases import ref
+from chemex.bases.three_state import exchange_model
 
 # yapf: disable
 indexes = [0, 1, 2,
@@ -145,4 +146,6 @@ def create_default_params(model=None,
         (map_names['r2_i_c'], 10.0, True, 0.0, None, None),
         (map_names['r1_i_c'], 1.0, True, 0.0, None, r1_i_c), )
 
+    map_names, params = exchange_model.update_params(params, map_names, model, temperature, p_total,
+                                                 l_total)
     return map_names, params
